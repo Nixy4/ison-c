@@ -11,16 +11,16 @@
 
 /* ==================== Object Schema ==================== */
 
-static IsonanticValidationErrors* object_validate(IsonanticSchema* schema, IsonanticValue* value) {
-    IsonanticObjectSchema* s = (IsonanticObjectSchema*)schema;
-    IsonanticValidationErrors* errors = NULL;
+static isonantic_validation_errors_t* object_validate(isonantic_schema_t* schema, isonantic_value_t* value) {
+    isonantic_object_schema_t* s = (isonantic_object_schema_t*)schema;
+    isonantic_validation_errors_t* errors = NULL;
 
     if (value == NULL) {
         if (s->base.optional) {
             return NULL;
         }
         errors = isonantic_validation_errors_create();
-        IsonanticValidationError* err = isonantic_validation_error_create(
+        isonantic_validation_error_t* err = isonantic_validation_error_create(
             "", "required field is missing", NULL);
         isonantic_validation_errors_add(errors, err);
         return errors;
@@ -30,12 +30,12 @@ static IsonanticValidationErrors* object_validate(IsonanticSchema* schema, Isona
         errors = isonantic_validation_errors_create();
         char msg[64];
         snprintf(msg, sizeof(msg), "expected object, got %d", value->type);
-        IsonanticValidationError* err = isonantic_validation_error_create("", msg, value);
+        isonantic_validation_error_t* err = isonantic_validation_error_create("", msg, value);
         isonantic_validation_errors_add(errors, err);
         return errors;
     }
 
-    IsonanticDict* obj = value->data.object_value;
+    isonantic_dict_t* obj = value->data.object_value;
     int field_count = isonantic_dict_size(s->fields);
 
     for (int i = 0; i < field_count; i++) {
@@ -64,9 +64,9 @@ static IsonanticValidationErrors* object_validate(IsonanticSchema* schema, Isona
     }
 }
 
-static void object_free_schema(IsonanticSchema* schema) {
+static void object_free_schema(isonantic_schema_t* schema) {
     if (schema == NULL) return;
-    IsonanticObjectSchema* s = (IsonanticObjectSchema*)schema;
+    isonantic_object_schema_t* s = (isonantic_object_schema_t*)schema;
     if (s->fields != NULL) {
         /* Free field schemas */
         int size = isonantic_dict_size(s->fields);
@@ -88,37 +88,37 @@ static void object_free_schema(IsonanticSchema* schema) {
     free(s);
 }
 
-IsonanticSchema* isonantic_object_create(IsonanticDict* fields) {
-    IsonanticObjectSchema* schema = (IsonanticObjectSchema*)malloc(sizeof(IsonanticObjectSchema));
+isonantic_schema_t* isonantic_object_create(isonantic_dict_t* fields) {
+    isonantic_object_schema_t* schema = (isonantic_object_schema_t*)malloc(sizeof(isonantic_object_schema_t));
     if (schema == NULL) return NULL;
-    memset(schema, 0, sizeof(IsonanticObjectSchema));
+    memset(schema, 0, sizeof(isonantic_object_schema_t));
     schema->base.validate = object_validate;
     schema->base.free_schema = object_free_schema;
     schema->fields = fields;
-    return (IsonanticSchema*)schema;
+    return (isonantic_schema_t*)schema;
 }
 
-IsonanticSchema* isonantic_document_create(IsonanticDict* blocks) {
-    IsonanticDocumentSchema* schema = (IsonanticDocumentSchema*)malloc(sizeof(IsonanticDocumentSchema));
+isonantic_schema_t* isonantic_document_create(isonantic_dict_t* blocks) {
+    isonantic_document_schema_t* schema = (isonantic_document_schema_t*)malloc(sizeof(isonantic_document_schema_t));
     if (schema == NULL) return NULL;
-    memset(schema, 0, sizeof(IsonanticDocumentSchema));
+    memset(schema, 0, sizeof(isonantic_document_schema_t));
     schema->blocks = blocks;
-    return (IsonanticSchema*)schema;
+    return (isonantic_schema_t*)schema;
 }
 
-static IsonanticValidationErrors* document_validate(IsonanticSchema* schema, IsonanticValue* value) {
-    IsonanticDocumentSchema* s = (IsonanticDocumentSchema*)schema;
+static isonantic_validation_errors_t* document_validate(isonantic_schema_t* schema, isonantic_value_t* value) {
+    isonantic_document_schema_t* s = (isonantic_document_schema_t*)schema;
 
     if (value == NULL || value->type != ISONANTIC_VALUE_OBJECT) {
-        IsonanticValidationErrors* errors = isonantic_validation_errors_create();
-        IsonanticValidationError* err = isonantic_validation_error_create(
+        isonantic_validation_errors_t* errors = isonantic_validation_errors_create();
+        isonantic_validation_error_t* err = isonantic_validation_error_create(
             "", "expected document object", value);
         isonantic_validation_errors_add(errors, err);
         return errors;
     }
 
-    IsonanticDict* doc = value->data.object_value;
-    IsonanticValidationErrors* errors = NULL;
+    isonantic_dict_t* doc = value->data.object_value;
+    isonantic_validation_errors_t* errors = NULL;
 
     /* Validate each block */
     if (s->blocks != NULL) {

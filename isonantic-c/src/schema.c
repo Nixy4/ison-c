@@ -46,28 +46,28 @@ static bool is_valid_url(const char* str) {
 
 /* ==================== Base Schema Functions ==================== */
 
-void isonantic_schema_set_optional(IsonanticSchema* schema) {
+void isonantic_schema_set_optional(isonantic_schema_t* schema) {
     if (schema == NULL) return;
     schema->optional = true;
 }
 
-void isonantic_schema_set_default(IsonanticSchema* schema, IsonanticValue* value) {
+void isonantic_schema_set_default(isonantic_schema_t* schema, isonantic_value_t* value) {
     if (schema == NULL) return;
     schema->has_default = true;
     schema->default_value = value;
 }
 
-void isonantic_schema_set_description(IsonanticSchema* schema, const char* desc) {
+void isonantic_schema_set_description(isonantic_schema_t* schema, const char* desc) {
     if (schema == NULL || desc == NULL) return;
     free(schema->description);
     schema->description = strdup(desc);
 }
 
-void isonantic_schema_add_refinement(IsonanticSchema* schema, IsonanticRefinementFn fn, void* user_data, const char* message) {
+void isonantic_schema_add_refinement(isonantic_schema_t* schema, isonantic_refinement_fn_t fn, void* user_data, const char* message) {
     if (schema == NULL || fn == NULL) return;
 
     /* Create refinement struct */
-    IsonanticRefinement* refinement = (IsonanticRefinement*)malloc(sizeof(IsonanticRefinement));
+    isonantic_refinement_t* refinement = (isonantic_refinement_t*)malloc(sizeof(isonantic_refinement_t));
     if (refinement == NULL) return;
     refinement->fn = fn;
     refinement->user_data = user_data;
@@ -79,24 +79,24 @@ void isonantic_schema_add_refinement(IsonanticSchema* schema, IsonanticRefinemen
     isonantic_array_add(schema->refinements, refinement);
 }
 
-IsonanticValidationErrors* isonantic_schema_run_refinements(IsonanticSchema* schema, IsonanticValue* value) {
+isonantic_validation_errors_t* isonantic_schema_run_refinements(isonantic_schema_t* schema, isonantic_value_t* value) {
     if (schema == NULL || schema->refinements == NULL) return NULL;
 
-    IsonanticValidationErrors* errors = NULL;
+    isonantic_validation_errors_t* errors = NULL;
     int size = isonantic_array_size(schema->refinements);
 
     for (int i = 0; i < size; i++) {
-        IsonanticRefinement* refinement = (IsonanticRefinement*)isonantic_array_get(schema->refinements, i);
+        isonantic_refinement_t* refinement = (isonantic_refinement_t*)isonantic_array_get(schema->refinements, i);
         if (refinement == NULL || refinement->fn == NULL) continue;
 
-        IsonanticValidationErrors* result = refinement->fn(value, refinement->user_data);
+        isonantic_validation_errors_t* result = refinement->fn(value, refinement->user_data);
         if (result != NULL && isonantic_validation_errors_has_errors(result)) {
             if (errors == NULL) {
                 errors = isonantic_validation_errors_create();
             }
             /* Add first error from refinement */
             if (result->head != NULL && refinement->error_message) {
-                IsonanticValidationError* err = isonantic_validation_error_create(
+                isonantic_validation_error_t* err = isonantic_validation_error_create(
                     "", refinement->error_message, value);
                 isonantic_validation_errors_add(errors, err);
             }
@@ -111,16 +111,16 @@ IsonanticValidationErrors* isonantic_schema_run_refinements(IsonanticSchema* sch
 
 /* ==================== String Schema ==================== */
 
-static IsonanticValidationErrors* string_validate(IsonanticSchema* schema, IsonanticValue* value) {
-    IsonanticStringSchema* s = (IsonanticStringSchema*)schema;
-    IsonanticValidationErrors* errors = NULL;
+static isonantic_validation_errors_t* string_validate(isonantic_schema_t* schema, isonantic_value_t* value) {
+    isonantic_string_schema_t* s = (isonantic_string_schema_t*)schema;
+    isonantic_validation_errors_t* errors = NULL;
 
     if (value == NULL) {
         if (s->base.optional) {
             return NULL;
         }
         errors = isonantic_validation_errors_create();
-        IsonanticValidationError* err = isonantic_validation_error_create(
+        isonantic_validation_error_t* err = isonantic_validation_error_create(
             "", "required field is missing", NULL);
         isonantic_validation_errors_add(errors, err);
         return errors;
@@ -130,7 +130,7 @@ static IsonanticValidationErrors* string_validate(IsonanticSchema* schema, Isona
         errors = isonantic_validation_errors_create();
         char msg[64];
         snprintf(msg, sizeof(msg), "expected string, got %d", value->type);
-        IsonanticValidationError* err = isonantic_validation_error_create("", msg, value);
+        isonantic_validation_error_t* err = isonantic_validation_error_create("", msg, value);
         isonantic_validation_errors_add(errors, err);
         return errors;
     }
@@ -141,7 +141,7 @@ static IsonanticValidationErrors* string_validate(IsonanticSchema* schema, Isona
         if (errors == NULL) errors = isonantic_validation_errors_create();
         char msg[64];
         snprintf(msg, sizeof(msg), "string must be at least %d characters", *s->min_len);
-        IsonanticValidationError* err = isonantic_validation_error_create("", msg, value);
+        isonantic_validation_error_t* err = isonantic_validation_error_create("", msg, value);
         isonantic_validation_errors_add(errors, err);
     }
 
@@ -149,7 +149,7 @@ static IsonanticValidationErrors* string_validate(IsonanticSchema* schema, Isona
         if (errors == NULL) errors = isonantic_validation_errors_create();
         char msg[64];
         snprintf(msg, sizeof(msg), "string must be at most %d characters", *s->max_len);
-        IsonanticValidationError* err = isonantic_validation_error_create("", msg, value);
+        isonantic_validation_error_t* err = isonantic_validation_error_create("", msg, value);
         isonantic_validation_errors_add(errors, err);
     }
 
@@ -157,19 +157,19 @@ static IsonanticValidationErrors* string_validate(IsonanticSchema* schema, Isona
         if (errors == NULL) errors = isonantic_validation_errors_create();
         char msg[64];
         snprintf(msg, sizeof(msg), "string must be exactly %d characters", *s->exact_len);
-        IsonanticValidationError* err = isonantic_validation_error_create("", msg, value);
+        isonantic_validation_error_t* err = isonantic_validation_error_create("", msg, value);
         isonantic_validation_errors_add(errors, err);
     }
 
     if (s->is_email && !is_valid_email(str)) {
         if (errors == NULL) errors = isonantic_validation_errors_create();
-        IsonanticValidationError* err = isonantic_validation_error_create("", "invalid email format", value);
+        isonantic_validation_error_t* err = isonantic_validation_error_create("", "invalid email format", value);
         isonantic_validation_errors_add(errors, err);
     }
 
     if (s->is_url && !is_valid_url(str)) {
         if (errors == NULL) errors = isonantic_validation_errors_create();
-        IsonanticValidationError* err = isonantic_validation_error_create("", "invalid URL format", value);
+        isonantic_validation_error_t* err = isonantic_validation_error_create("", "invalid URL format", value);
         isonantic_validation_errors_add(errors, err);
     }
 
@@ -177,17 +177,17 @@ static IsonanticValidationErrors* string_validate(IsonanticSchema* schema, Isona
         regex_t* regex = (regex_t*)s->pattern;
         if (regexec(regex, str, 0, NULL, 0) != 0) {
             if (errors == NULL) errors = isonantic_validation_errors_create();
-            IsonanticValidationError* err = isonantic_validation_error_create("", "string does not match required pattern", value);
+            isonantic_validation_error_t* err = isonantic_validation_error_create("", "string does not match required pattern", value);
             isonantic_validation_errors_add(errors, err);
         }
     }
 
     /* Run refinements */
-    IsonanticValidationErrors* refinements = isonantic_schema_run_refinements(schema, value);
+    isonantic_validation_errors_t* refinements = isonantic_schema_run_refinements(schema, value);
     if (refinements != NULL) {
         if (errors == NULL) errors = refinements;
         else {
-            IsonanticValidationError* curr = refinements->head;
+            isonantic_validation_error_t* curr = refinements->head;
             while (curr != NULL) {
                 isonantic_validation_errors_add(errors, curr);
                 curr = curr->next;
@@ -199,9 +199,9 @@ static IsonanticValidationErrors* string_validate(IsonanticSchema* schema, Isona
     return errors;
 }
 
-static void string_free_schema(IsonanticSchema* schema) {
+static void string_free_schema(isonantic_schema_t* schema) {
     if (schema == NULL) return;
-    IsonanticStringSchema* s = (IsonanticStringSchema*)schema;
+    isonantic_string_schema_t* s = (isonantic_string_schema_t*)schema;
     free(s->min_len);
     free(s->max_len);
     free(s->exact_len);
@@ -220,54 +220,54 @@ static void string_free_schema(IsonanticSchema* schema) {
     free(s);
 }
 
-IsonanticSchema* isonantic_string_create(void) {
-    IsonanticStringSchema* schema = (IsonanticStringSchema*)malloc(sizeof(IsonanticStringSchema));
+isonantic_schema_t* isonantic_string_create(void) {
+    isonantic_string_schema_t* schema = (isonantic_string_schema_t*)malloc(sizeof(isonantic_string_schema_t));
     if (schema == NULL) return NULL;
-    memset(schema, 0, sizeof(IsonanticStringSchema));
+    memset(schema, 0, sizeof(isonantic_string_schema_t));
     schema->base.validate = string_validate;
     schema->base.free_schema = string_free_schema;
-    return (IsonanticSchema*)schema;
+    return (isonantic_schema_t*)schema;
 }
 
-IsonanticSchema* isonantic_string_min(IsonanticSchema* schema, int n) {
+isonantic_schema_t* isonantic_string_min(isonantic_schema_t* schema, int n) {
     if (schema == NULL) return NULL;
-    IsonanticStringSchema* s = (IsonanticStringSchema*)schema;
+    isonantic_string_schema_t* s = (isonantic_string_schema_t*)schema;
     s->min_len = (int*)malloc(sizeof(int));
     *s->min_len = n;
     return schema;
 }
 
-IsonanticSchema* isonantic_string_max(IsonanticSchema* schema, int n) {
+isonantic_schema_t* isonantic_string_max(isonantic_schema_t* schema, int n) {
     if (schema == NULL) return NULL;
-    IsonanticStringSchema* s = (IsonanticStringSchema*)schema;
+    isonantic_string_schema_t* s = (isonantic_string_schema_t*)schema;
     s->max_len = (int*)malloc(sizeof(int));
     *s->max_len = n;
     return schema;
 }
 
-IsonanticSchema* isonantic_string_length(IsonanticSchema* schema, int n) {
+isonantic_schema_t* isonantic_string_length(isonantic_schema_t* schema, int n) {
     if (schema == NULL) return NULL;
-    IsonanticStringSchema* s = (IsonanticStringSchema*)schema;
+    isonantic_string_schema_t* s = (isonantic_string_schema_t*)schema;
     s->exact_len = (int*)malloc(sizeof(int));
     *s->exact_len = n;
     return schema;
 }
 
-IsonanticSchema* isonantic_string_email(IsonanticSchema* schema) {
+isonantic_schema_t* isonantic_string_email(isonantic_schema_t* schema) {
     if (schema == NULL) return NULL;
-    ((IsonanticStringSchema*)schema)->is_email = true;
+    ((isonantic_string_schema_t*)schema)->is_email = true;
     return schema;
 }
 
-IsonanticSchema* isonantic_string_url(IsonanticSchema* schema) {
+isonantic_schema_t* isonantic_string_url(isonantic_schema_t* schema) {
     if (schema == NULL) return NULL;
-    ((IsonanticStringSchema*)schema)->is_url = true;
+    ((isonantic_string_schema_t*)schema)->is_url = true;
     return schema;
 }
 
-IsonanticSchema* isonantic_string_regex(IsonanticSchema* schema, const char* pattern) {
+isonantic_schema_t* isonantic_string_regex(isonantic_schema_t* schema, const char* pattern) {
     if (schema == NULL || pattern == NULL) return NULL;
-    IsonanticStringSchema* s = (IsonanticStringSchema*)schema;
+    isonantic_string_schema_t* s = (isonantic_string_schema_t*)schema;
     regex_t* regex = (regex_t*)malloc(sizeof(regex_t));
     if (regex == NULL) return schema;
     if (regcomp(regex, pattern, REG_EXTENDED) != 0) {
@@ -278,37 +278,37 @@ IsonanticSchema* isonantic_string_regex(IsonanticSchema* schema, const char* pat
     return schema;
 }
 
-IsonanticSchema* isonantic_string_optional(IsonanticSchema* schema) {
+isonantic_schema_t* isonantic_string_optional(isonantic_schema_t* schema) {
     if (schema == NULL) return NULL;
     isonantic_schema_set_optional(schema);
     return schema;
 }
 
-IsonanticSchema* isonantic_string_default(IsonanticSchema* schema, const char* val) {
+isonantic_schema_t* isonantic_string_default(isonantic_schema_t* schema, const char* val) {
     if (schema == NULL) return NULL;
     isonantic_schema_set_default(schema, isonantic_value_create_string(val));
     return schema;
 }
 
-IsonanticSchema* isonantic_string_describe(IsonanticSchema* schema, const char* desc) {
+isonantic_schema_t* isonantic_string_describe(isonantic_schema_t* schema, const char* desc) {
     if (schema == NULL) return NULL;
     isonantic_schema_set_description(schema, desc);
     return schema;
 }
 
-static IsonanticValidationErrors* string_refine_fn(IsonanticValue* value, void* user_data) {
+static isonantic_validation_errors_t* string_refine_fn(isonantic_value_t* value, void* user_data) {
     if (value == NULL || value->type != ISONANTIC_VALUE_STRING) return NULL;
     bool (*fn)(const char*) = (bool (*)(const char*))user_data;
     if (fn == NULL) return NULL;
     if (fn(value->data.string_value)) return NULL;
 
-    IsonanticValidationErrors* errors = isonantic_validation_errors_create();
-    IsonanticValidationError* err = isonantic_validation_error_create("", "", value);
+    isonantic_validation_errors_t* errors = isonantic_validation_errors_create();
+    isonantic_validation_error_t* err = isonantic_validation_error_create("", "", value);
     isonantic_validation_errors_add(errors, err);
     return errors;
 }
 
-IsonanticSchema* isonantic_string_refine(IsonanticSchema* schema, bool (*fn)(const char*), const char* msg) {
+isonantic_schema_t* isonantic_string_refine(isonantic_schema_t* schema, bool (*fn)(const char*), const char* msg) {
     if (schema == NULL) return NULL;
     isonantic_schema_add_refinement(schema, string_refine_fn, (void*)fn, msg);
     return schema;
@@ -316,16 +316,16 @@ IsonanticSchema* isonantic_string_refine(IsonanticSchema* schema, bool (*fn)(con
 
 /* ==================== Number Schema ==================== */
 
-static IsonanticValidationErrors* number_validate(IsonanticSchema* schema, IsonanticValue* value) {
-    IsonanticNumberSchema* s = (IsonanticNumberSchema*)schema;
-    IsonanticValidationErrors* errors = NULL;
+static isonantic_validation_errors_t* number_validate(isonantic_schema_t* schema, isonantic_value_t* value) {
+    isonantic_number_schema_t* s = (isonantic_number_schema_t*)schema;
+    isonantic_validation_errors_t* errors = NULL;
 
     if (value == NULL) {
         if (s->base.optional) {
             return NULL;
         }
         errors = isonantic_validation_errors_create();
-        IsonanticValidationError* err = isonantic_validation_error_create(
+        isonantic_validation_error_t* err = isonantic_validation_error_create(
             "", "required field is missing", NULL);
         isonantic_validation_errors_add(errors, err);
         return errors;
@@ -347,14 +347,14 @@ static IsonanticValidationErrors* number_validate(IsonanticSchema* schema, Isona
         errors = isonantic_validation_errors_create();
         char msg[64];
         snprintf(msg, sizeof(msg), "expected number, got %d", value->type);
-        IsonanticValidationError* err = isonantic_validation_error_create("", msg, value);
+        isonantic_validation_error_t* err = isonantic_validation_error_create("", msg, value);
         isonantic_validation_errors_add(errors, err);
         return errors;
     }
 
     if (s->is_int && fmod(num, 1.0) != 0.0) {
         if (errors == NULL) errors = isonantic_validation_errors_create();
-        IsonanticValidationError* err = isonantic_validation_error_create("", "expected integer, got float", value);
+        isonantic_validation_error_t* err = isonantic_validation_error_create("", "expected integer, got float", value);
         isonantic_validation_errors_add(errors, err);
     }
 
@@ -362,7 +362,7 @@ static IsonanticValidationErrors* number_validate(IsonanticSchema* schema, Isona
         if (errors == NULL) errors = isonantic_validation_errors_create();
         char msg[64];
         snprintf(msg, sizeof(msg), "number must be at least %g", *s->min_val);
-        IsonanticValidationError* err = isonantic_validation_error_create("", msg, value);
+        isonantic_validation_error_t* err = isonantic_validation_error_create("", msg, value);
         isonantic_validation_errors_add(errors, err);
     }
 
@@ -370,28 +370,28 @@ static IsonanticValidationErrors* number_validate(IsonanticSchema* schema, Isona
         if (errors == NULL) errors = isonantic_validation_errors_create();
         char msg[64];
         snprintf(msg, sizeof(msg), "number must be at most %g", *s->max_val);
-        IsonanticValidationError* err = isonantic_validation_error_create("", msg, value);
+        isonantic_validation_error_t* err = isonantic_validation_error_create("", msg, value);
         isonantic_validation_errors_add(errors, err);
     }
 
     if (s->is_positive && num <= 0) {
         if (errors == NULL) errors = isonantic_validation_errors_create();
-        IsonanticValidationError* err = isonantic_validation_error_create("", "number must be positive", value);
+        isonantic_validation_error_t* err = isonantic_validation_error_create("", "number must be positive", value);
         isonantic_validation_errors_add(errors, err);
     }
 
     if (s->is_negative && num >= 0) {
         if (errors == NULL) errors = isonantic_validation_errors_create();
-        IsonanticValidationError* err = isonantic_validation_error_create("", "number must be negative", value);
+        isonantic_validation_error_t* err = isonantic_validation_error_create("", "number must be negative", value);
         isonantic_validation_errors_add(errors, err);
     }
 
     /* Run refinements */
-    IsonanticValidationErrors* refinements = isonantic_schema_run_refinements(schema, value);
+    isonantic_validation_errors_t* refinements = isonantic_schema_run_refinements(schema, value);
     if (refinements != NULL) {
         if (errors == NULL) errors = refinements;
         else {
-            IsonanticValidationError* curr = refinements->head;
+            isonantic_validation_error_t* curr = refinements->head;
             while (curr != NULL) {
                 isonantic_validation_errors_add(errors, curr);
                 curr = curr->next;
@@ -403,9 +403,9 @@ static IsonanticValidationErrors* number_validate(IsonanticSchema* schema, Isona
     return errors;
 }
 
-static void number_free_schema(IsonanticSchema* schema) {
+static void number_free_schema(isonantic_schema_t* schema) {
     if (schema == NULL) return;
-    IsonanticNumberSchema* s = (IsonanticNumberSchema*)schema;
+    isonantic_number_schema_t* s = (isonantic_number_schema_t*)schema;
     free(s->min_val);
     free(s->max_val);
     if (s->base.refinements != NULL) {
@@ -419,81 +419,81 @@ static void number_free_schema(IsonanticSchema* schema) {
     free(s);
 }
 
-IsonanticSchema* isonantic_number_create(void) {
-    IsonanticNumberSchema* schema = (IsonanticNumberSchema*)malloc(sizeof(IsonanticNumberSchema));
+isonantic_schema_t* isonantic_number_create(void) {
+    isonantic_number_schema_t* schema = (isonantic_number_schema_t*)malloc(sizeof(isonantic_number_schema_t));
     if (schema == NULL) return NULL;
-    memset(schema, 0, sizeof(IsonanticNumberSchema));
+    memset(schema, 0, sizeof(isonantic_number_schema_t));
     schema->base.validate = number_validate;
     schema->base.free_schema = number_free_schema;
-    return (IsonanticSchema*)schema;
+    return (isonantic_schema_t*)schema;
 }
 
-IsonanticSchema* isonantic_int_create(void) {
-    IsonanticSchema* schema = isonantic_number_create();
+isonantic_schema_t* isonantic_int_create(void) {
+    isonantic_schema_t* schema = isonantic_number_create();
     if (schema == NULL) return NULL;
-    ((IsonanticNumberSchema*)schema)->is_int = true;
+    ((isonantic_number_schema_t*)schema)->is_int = true;
     return schema;
 }
 
-IsonanticSchema* isonantic_number_min(IsonanticSchema* schema, double n) {
+isonantic_schema_t* isonantic_number_min(isonantic_schema_t* schema, double n) {
     if (schema == NULL) return NULL;
-    IsonanticNumberSchema* s = (IsonanticNumberSchema*)schema;
+    isonantic_number_schema_t* s = (isonantic_number_schema_t*)schema;
     s->min_val = (double*)malloc(sizeof(double));
     *s->min_val = n;
     return schema;
 }
 
-IsonanticSchema* isonantic_number_max(IsonanticSchema* schema, double n) {
+isonantic_schema_t* isonantic_number_max(isonantic_schema_t* schema, double n) {
     if (schema == NULL) return NULL;
-    IsonanticNumberSchema* s = (IsonanticNumberSchema*)schema;
+    isonantic_number_schema_t* s = (isonantic_number_schema_t*)schema;
     s->max_val = (double*)malloc(sizeof(double));
     *s->max_val = n;
     return schema;
 }
 
-IsonanticSchema* isonantic_number_positive(IsonanticSchema* schema) {
+isonantic_schema_t* isonantic_number_positive(isonantic_schema_t* schema) {
     if (schema == NULL) return NULL;
-    ((IsonanticNumberSchema*)schema)->is_positive = true;
+    ((isonantic_number_schema_t*)schema)->is_positive = true;
     return schema;
 }
 
-IsonanticSchema* isonantic_number_negative(IsonanticSchema* schema) {
+isonantic_schema_t* isonantic_number_negative(isonantic_schema_t* schema) {
     if (schema == NULL) return NULL;
-    ((IsonanticNumberSchema*)schema)->is_negative = true;
+    ((isonantic_number_schema_t*)schema)->is_negative = true;
     return schema;
 }
 
-IsonanticSchema* isonantic_number_optional(IsonanticSchema* schema) {
+isonantic_schema_t* isonantic_number_optional(isonantic_schema_t* schema) {
     if (schema == NULL) return NULL;
     isonantic_schema_set_optional(schema);
     return schema;
 }
 
-IsonanticSchema* isonantic_number_default(IsonanticSchema* schema, double val) {
+isonantic_schema_t* isonantic_number_default(isonantic_schema_t* schema, double val) {
     if (schema == NULL) return NULL;
     isonantic_schema_set_default(schema, isonantic_value_create_number(val));
     return schema;
 }
 
-IsonanticSchema* isonantic_number_describe(IsonanticSchema* schema, const char* desc) {
+isonantic_schema_t* isonantic_number_describe(isonantic_schema_t* schema, const char* desc) {
     if (schema == NULL) return NULL;
     isonantic_schema_set_description(schema, desc);
     return schema;
 }
 
-static IsonanticValidationErrors* number_refine_fn(IsonanticValue* value, void* user_data) {
+static isonantic_validation_errors_t* number_refine_fn(isonantic_value_t* value, void* user_data) {
     if (value == NULL || value->type != ISONANTIC_VALUE_NUMBER) return NULL;
     bool (*fn)(double) = (bool (*)(double))user_data;
     if (fn == NULL) return NULL;
     if (fn(value->data.number_value)) return NULL;
 
-    IsonanticValidationErrors* errors = isonantic_validation_errors_create();
-    IsonanticValidationError* err = isonantic_validation_error_create("", "", value);
+    isonantic_validation_errors_t* errors = isonantic_validation_errors_create();
+    isonantic_validation_error_t* err = isonantic_validation_error_create("", "", value);
     isonantic_validation_errors_add(errors, err);
     return errors;
 }
 
-IsonanticSchema* isonantic_number_refine(IsonanticSchema* schema, bool (*fn)(double), const char* msg) {
+isonantic_schema_t* isonantic_number_refine(isonantic_schema_t* schema, bool (*fn)(double), const char* msg) {
     if (schema == NULL) return NULL;
     isonantic_schema_add_refinement(schema, number_refine_fn, (void*)fn, msg);
     return schema;
@@ -501,15 +501,15 @@ IsonanticSchema* isonantic_number_refine(IsonanticSchema* schema, bool (*fn)(dou
 
 /* ==================== Boolean Schema ==================== */
 
-static IsonanticValidationErrors* boolean_validate(IsonanticSchema* schema, IsonanticValue* value) {
-    IsonanticValidationErrors* errors = NULL;
+static isonantic_validation_errors_t* boolean_validate(isonantic_schema_t* schema, isonantic_value_t* value) {
+    isonantic_validation_errors_t* errors = NULL;
 
     if (value == NULL) {
         if (schema->optional) {
             return NULL;
         }
         errors = isonantic_validation_errors_create();
-        IsonanticValidationError* err = isonantic_validation_error_create(
+        isonantic_validation_error_t* err = isonantic_validation_error_create(
             "", "required field is missing", NULL);
         isonantic_validation_errors_add(errors, err);
         return errors;
@@ -519,7 +519,7 @@ static IsonanticValidationErrors* boolean_validate(IsonanticSchema* schema, Ison
         errors = isonantic_validation_errors_create();
         char msg[64];
         snprintf(msg, sizeof(msg), "expected boolean, got %d", value->type);
-        IsonanticValidationError* err = isonantic_validation_error_create("", msg, value);
+        isonantic_validation_error_t* err = isonantic_validation_error_create("", msg, value);
         isonantic_validation_errors_add(errors, err);
         return errors;
     }
@@ -527,9 +527,9 @@ static IsonanticValidationErrors* boolean_validate(IsonanticSchema* schema, Ison
     return isonantic_schema_run_refinements(schema, value);
 }
 
-static void boolean_free_schema(IsonanticSchema* schema) {
+static void boolean_free_schema(isonantic_schema_t* schema) {
     if (schema == NULL) return;
-    IsonanticBooleanSchema* s = (IsonanticBooleanSchema*)schema;
+    isonantic_boolean_schema_t* s = (isonantic_boolean_schema_t*)schema;
     if (s->base.refinements != NULL) {
         int size = isonantic_array_size(s->base.refinements);
         for (int i = 0; i < size; i++) {
@@ -541,28 +541,28 @@ static void boolean_free_schema(IsonanticSchema* schema) {
     free(s);
 }
 
-IsonanticSchema* isonantic_boolean_create(void) {
-    IsonanticBooleanSchema* schema = (IsonanticBooleanSchema*)malloc(sizeof(IsonanticBooleanSchema));
+isonantic_schema_t* isonantic_boolean_create(void) {
+    isonantic_boolean_schema_t* schema = (isonantic_boolean_schema_t*)malloc(sizeof(isonantic_boolean_schema_t));
     if (schema == NULL) return NULL;
-    memset(schema, 0, sizeof(IsonanticBooleanSchema));
+    memset(schema, 0, sizeof(isonantic_boolean_schema_t));
     schema->base.validate = boolean_validate;
     schema->base.free_schema = boolean_free_schema;
-    return (IsonanticSchema*)schema;
+    return (isonantic_schema_t*)schema;
 }
 
-IsonanticSchema* isonantic_boolean_optional(IsonanticSchema* schema) {
+isonantic_schema_t* isonantic_boolean_optional(isonantic_schema_t* schema) {
     if (schema == NULL) return NULL;
     isonantic_schema_set_optional(schema);
     return schema;
 }
 
-IsonanticSchema* isonantic_boolean_default(IsonanticSchema* schema, bool val) {
+isonantic_schema_t* isonantic_boolean_default(isonantic_schema_t* schema, bool val) {
     if (schema == NULL) return NULL;
     isonantic_schema_set_default(schema, isonantic_value_create_boolean(val));
     return schema;
 }
 
-IsonanticSchema* isonantic_boolean_describe(IsonanticSchema* schema, const char* desc) {
+isonantic_schema_t* isonantic_boolean_describe(isonantic_schema_t* schema, const char* desc) {
     if (schema == NULL) return NULL;
     isonantic_schema_set_description(schema, desc);
     return schema;
@@ -570,28 +570,28 @@ IsonanticSchema* isonantic_boolean_describe(IsonanticSchema* schema, const char*
 
 /* ==================== Null Schema ==================== */
 
-static IsonanticValidationErrors* null_validate(IsonanticSchema* schema, IsonanticValue* value) {
+static isonantic_validation_errors_t* null_validate(isonantic_schema_t* schema, isonantic_value_t* value) {
     (void)schema;
     if (value != NULL && value->type != ISONANTIC_VALUE_NULL) {
-        IsonanticValidationErrors* errors = isonantic_validation_errors_create();
+        isonantic_validation_errors_t* errors = isonantic_validation_errors_create();
         char msg[64];
         snprintf(msg, sizeof(msg), "expected null, got %d", value->type);
-        IsonanticValidationError* err = isonantic_validation_error_create("", msg, value);
+        isonantic_validation_error_t* err = isonantic_validation_error_create("", msg, value);
         isonantic_validation_errors_add(errors, err);
         return errors;
     }
     return NULL;
 }
 
-static void null_free_schema(IsonanticSchema* schema) {
+static void null_free_schema(isonantic_schema_t* schema) {
     if (schema == NULL) return;
     free(schema);
 }
 
-IsonanticSchema* isonantic_null_create(void) {
-    IsonanticSchema* schema = (IsonanticSchema*)malloc(sizeof(IsonanticSchema));
+isonantic_schema_t* isonantic_null_create(void) {
+    isonantic_schema_t* schema = (isonantic_schema_t*)malloc(sizeof(isonantic_schema_t));
     if (schema == NULL) return NULL;
-    memset(schema, 0, sizeof(IsonanticSchema));
+    memset(schema, 0, sizeof(isonantic_schema_t));
     schema->validate = null_validate;
     schema->free_schema = null_free_schema;
     return schema;
@@ -603,16 +603,16 @@ static bool is_valid_ref(const char* str) {
     return str != NULL && str[0] == ':';
 }
 
-static IsonanticValidationErrors* ref_validate(IsonanticSchema* schema, IsonanticValue* value) {
-    IsonanticRefSchema* s = (IsonanticRefSchema*)schema;
-    IsonanticValidationErrors* errors = NULL;
+static isonantic_validation_errors_t* ref_validate(isonantic_schema_t* schema, isonantic_value_t* value) {
+    isonantic_ref_schema_t* s = (isonantic_ref_schema_t*)schema;
+    isonantic_validation_errors_t* errors = NULL;
 
     if (value == NULL) {
         if (s->base.optional) {
             return NULL;
         }
         errors = isonantic_validation_errors_create();
-        IsonanticValidationError* err = isonantic_validation_error_create(
+        isonantic_validation_error_t* err = isonantic_validation_error_create(
             "", "required field is missing", NULL);
         isonantic_validation_errors_add(errors, err);
         return errors;
@@ -622,18 +622,18 @@ static IsonanticValidationErrors* ref_validate(IsonanticSchema* schema, Isonanti
         case ISONANTIC_VALUE_REFERENCE:
             if (!is_valid_ref(value->data.ref_value)) {
                 errors = isonantic_validation_errors_create();
-                IsonanticValidationError* err = isonantic_validation_error_create(
+                isonantic_validation_error_t* err = isonantic_validation_error_create(
                     "", "expected reference string starting with ':'", value);
                 isonantic_validation_errors_add(errors, err);
             }
             break;
 
         case ISONANTIC_VALUE_OBJECT: {
-            IsonanticDict* dict = value->data.object_value;
+            isonantic_dict_t* dict = value->data.object_value;
             char* ref_str = (char*)isonantic_dict_get(dict, "_ref");
             if (ref_str == NULL) {
                 errors = isonantic_validation_errors_create();
-                IsonanticValidationError* err = isonantic_validation_error_create(
+                isonantic_validation_error_t* err = isonantic_validation_error_create(
                     "", "expected reference object with _ref field", value);
                 isonantic_validation_errors_add(errors, err);
             } else if (s->ns != NULL) {
@@ -642,7 +642,7 @@ static IsonanticValidationErrors* ref_validate(IsonanticSchema* schema, Isonanti
                     errors = isonantic_validation_errors_create();
                     char msg[128];
                     snprintf(msg, sizeof(msg), "expected namespace %s", s->ns);
-                    IsonanticValidationError* err = isonantic_validation_error_create("", msg, value);
+                    isonantic_validation_error_t* err = isonantic_validation_error_create("", msg, value);
                     isonantic_validation_errors_add(errors, err);
                 }
             } else if (s->relationship != NULL) {
@@ -651,7 +651,7 @@ static IsonanticValidationErrors* ref_validate(IsonanticSchema* schema, Isonanti
                     errors = isonantic_validation_errors_create();
                     char msg[128];
                     snprintf(msg, sizeof(msg), "expected relationship %s", s->relationship);
-                    IsonanticValidationError* err = isonantic_validation_error_create("", msg, value);
+                    isonantic_validation_error_t* err = isonantic_validation_error_create("", msg, value);
                     isonantic_validation_errors_add(errors, err);
                 }
             }
@@ -662,7 +662,7 @@ static IsonanticValidationErrors* ref_validate(IsonanticSchema* schema, Isonanti
             errors = isonantic_validation_errors_create();
             char msg[64];
             snprintf(msg, sizeof(msg), "expected reference, got %d", value->type);
-            IsonanticValidationError* err = isonantic_validation_error_create("", msg, value);
+            isonantic_validation_error_t* err = isonantic_validation_error_create("", msg, value);
             isonantic_validation_errors_add(errors, err);
             break;
         }
@@ -671,9 +671,9 @@ static IsonanticValidationErrors* ref_validate(IsonanticSchema* schema, Isonanti
     return isonantic_schema_run_refinements(schema, value);
 }
 
-static void ref_free_schema(IsonanticSchema* schema) {
+static void ref_free_schema(isonantic_schema_t* schema) {
     if (schema == NULL) return;
-    IsonanticRefSchema* s = (IsonanticRefSchema*)schema;
+    isonantic_ref_schema_t* s = (isonantic_ref_schema_t*)schema;
     free(s->ns);
     free(s->relationship);
     if (s->base.refinements != NULL) {
@@ -687,36 +687,36 @@ static void ref_free_schema(IsonanticSchema* schema) {
     free(s);
 }
 
-IsonanticSchema* isonantic_ref_create(void) {
-    IsonanticRefSchema* schema = (IsonanticRefSchema*)malloc(sizeof(IsonanticRefSchema));
+isonantic_schema_t* isonantic_ref_create(void) {
+    isonantic_ref_schema_t* schema = (isonantic_ref_schema_t*)malloc(sizeof(isonantic_ref_schema_t));
     if (schema == NULL) return NULL;
-    memset(schema, 0, sizeof(IsonanticRefSchema));
+    memset(schema, 0, sizeof(isonantic_ref_schema_t));
     schema->base.validate = ref_validate;
     schema->base.free_schema = ref_free_schema;
-    return (IsonanticSchema*)schema;
+    return (isonantic_schema_t*)schema;
 }
 
-IsonanticSchema* isonantic_ref_namespace(IsonanticSchema* schema, const char* ns) {
+isonantic_schema_t* isonantic_ref_namespace(isonantic_schema_t* schema, const char* ns) {
     if (schema == NULL) return NULL;
-    IsonanticRefSchema* s = (IsonanticRefSchema*)schema;
+    isonantic_ref_schema_t* s = (isonantic_ref_schema_t*)schema;
     s->ns = strdup(ns);
     return schema;
 }
 
-IsonanticSchema* isonantic_ref_relationship(IsonanticSchema* schema, const char* rel) {
+isonantic_schema_t* isonantic_ref_relationship(isonantic_schema_t* schema, const char* rel) {
     if (schema == NULL) return NULL;
-    IsonanticRefSchema* s = (IsonanticRefSchema*)schema;
+    isonantic_ref_schema_t* s = (isonantic_ref_schema_t*)schema;
     s->relationship = strdup(rel);
     return schema;
 }
 
-IsonanticSchema* isonantic_ref_optional(IsonanticSchema* schema) {
+isonantic_schema_t* isonantic_ref_optional(isonantic_schema_t* schema) {
     if (schema == NULL) return NULL;
     isonantic_schema_set_optional(schema);
     return schema;
 }
 
-IsonanticSchema* isonantic_ref_describe(IsonanticSchema* schema, const char* desc) {
+isonantic_schema_t* isonantic_ref_describe(isonantic_schema_t* schema, const char* desc) {
     if (schema == NULL) return NULL;
     isonantic_schema_set_description(schema, desc);
     return schema;
@@ -724,7 +724,7 @@ IsonanticSchema* isonantic_ref_describe(IsonanticSchema* schema, const char* des
 
 /* ==================== Free Functions ==================== */
 
-void isonantic_schema_free(IsonanticSchema* schema) {
+void isonantic_schema_free(isonantic_schema_t* schema) {
     if (schema == NULL) return;
     if (schema->free_schema != NULL) {
         schema->free_schema(schema);
