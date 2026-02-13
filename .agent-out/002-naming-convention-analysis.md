@@ -43,7 +43,7 @@
 | 结构体类型 | `Isonantic<Name>` | `IsonanticSchema`, `IsonanticValue`, `IsonanticDict` |
 | 回调类型 | `Isonantic<Name>Fn` | `IsonanticRefinementFn` |
 
-**⚠️ 不一致**: 两个子库使用了完全不同的类型命名风格。`ison-c` 使用 C 惯用的 `snake_case_t`，`isonantic-c` 使用 PascalCase（更接近 C++/Java 风格）。
+**⚠️ 不一致**: 两个子库使用了完全不同的类型命名风格。`ison-c` 使用 C 惯用的 `snake_case_t`， `isonantic-c` 使用 PascalCase （更接近 C++/Java 风格）。
 
 ### 2.3 函数命名
 
