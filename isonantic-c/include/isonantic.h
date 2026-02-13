@@ -18,13 +18,13 @@ extern "C" {
 #define ISONANTIC_VERSION "1.0.0"
 
 /* Forward declarations */
-typedef struct IsonanticSchema IsonanticSchema;
-typedef struct IsonanticValidationError IsonanticValidationError;
-typedef struct IsonanticValidationErrors IsonanticValidationErrors;
-typedef struct IsonanticSafeParseResult IsonanticSafeParseResult;
-typedef struct IsonanticDict IsonanticDict;
-typedef struct IsonanticArray IsonanticArray;
-typedef struct IsonanticDictEntry IsonanticDictEntry;
+typedef struct isonantic_schema_t isonantic_schema_t;
+typedef struct isonantic_validation_error_t isonantic_validation_error_t;
+typedef struct isonantic_validation_errors_t isonantic_validation_errors_t;
+typedef struct isonantic_safe_parse_result_t isonantic_safe_parse_result_t;
+typedef struct isonantic_dict_t isonantic_dict_t;
+typedef struct isonantic_array_t isonantic_array_t;
+typedef struct isonantic_dict_entry_t isonantic_dict_entry_t;
 
 /* Value types for validation */
 typedef enum {
@@ -35,297 +35,297 @@ typedef enum {
     ISONANTIC_VALUE_OBJECT,
     ISONANTIC_VALUE_ARRAY,
     ISONANTIC_VALUE_REFERENCE
-} IsonanticValueType;
+} isonantic_value_type_t;
 
 /* Generic value container */
 typedef struct {
-    IsonanticValueType type;
+    isonantic_value_type_t type;
     union {
         char* string_value;
         double number_value;
         bool boolean_value;
-        IsonanticDict* object_value;
-        IsonanticArray* array_value;
+        isonantic_dict_t* object_value;
+        isonantic_array_t* array_value;
         char* ref_value;
     } data;
-} IsonanticValue;
+} isonantic_value_t;
 
 /* Validation error */
-struct IsonanticValidationError {
+struct isonantic_validation_error_t {
     char* field;
     char* message;
-    IsonanticValue* value;
-    IsonanticValidationError* next;
+    isonantic_value_t* value;
+    isonantic_validation_error_t* next;
 };
 
 /* Collection of validation errors */
-struct IsonanticValidationErrors {
-    IsonanticValidationError* head;
-    IsonanticValidationError* tail;
+struct isonantic_validation_errors_t {
+    isonantic_validation_error_t* head;
+    isonantic_validation_error_t* tail;
     int count;
 };
 
 /* Safe parse result */
-struct IsonanticSafeParseResult {
+struct isonantic_safe_parse_result_t {
     bool success;
-    IsonanticDict* data;
-    IsonanticValidationErrors* error;
+    isonantic_dict_t* data;
+    isonantic_validation_errors_t* error;
 };
 
 /* Refinement function type */
-typedef IsonanticValidationErrors* (*IsonanticRefinementFn)(IsonanticValue* value, void* user_data);
+typedef isonantic_validation_errors_t* (*isonantic_refinement_fn_t)(isonantic_value_t* value, void* user_data);
 
 /* Refinement structure */
 typedef struct {
-    IsonanticRefinementFn fn;
+    isonantic_refinement_fn_t fn;
     void* user_data;
     char* error_message;
-} IsonanticRefinement;
+} isonantic_refinement_t;
 
 /* Dictionary/Map implementation */
-struct IsonanticDictEntry {
+struct isonantic_dict_entry_t {
     char* key;
     void* value;
-    struct IsonanticDictEntry* next;
+    struct isonantic_dict_entry_t* next;
 };
 
-struct IsonanticDict {
-    struct IsonanticDictEntry** buckets;
+struct isonantic_dict_t {
+    struct isonantic_dict_entry_t** buckets;
     int capacity;
     int size;
 };
 
 /* Array implementation */
-struct IsonanticArray {
+struct isonantic_array_t {
     void** items;
     int size;
     int capacity;
 };
 
 /* Base schema structure */
-struct IsonanticSchema {
+struct isonantic_schema_t {
     /* Validation */
-    IsonanticValidationErrors* (*validate)(IsonanticSchema* schema, IsonanticValue* value);
+    isonantic_validation_errors_t* (*validate)(isonantic_schema_t* schema, isonantic_value_t* value);
 
     /* Properties */
     bool optional;
     bool has_default;
-    IsonanticValue* default_value;
+    isonantic_value_t* default_value;
     char* description;
 
     /* Refinements */
-    IsonanticArray* refinements;
+    isonantic_array_t* refinements;
 
     /* Free function */
-    void (*free_schema)(IsonanticSchema* schema);
+    void (*free_schema)(isonantic_schema_t* schema);
 };
 
 /* String schema */
 typedef struct {
-    IsonanticSchema base;
+    isonantic_schema_t base;
     int* min_len;
     int* max_len;
     int* exact_len;
     void* pattern;
     bool is_email;
     bool is_url;
-} IsonanticStringSchema;
+} isonantic_string_schema_t;
 
 /* Number schema */
 typedef struct {
-    IsonanticSchema base;
+    isonantic_schema_t base;
     double* min_val;
     double* max_val;
     bool is_int;
     bool is_positive;
     bool is_negative;
-} IsonanticNumberSchema;
+} isonantic_number_schema_t;
 
 /* Boolean schema */
 typedef struct {
-    IsonanticSchema base;
-} IsonanticBooleanSchema;
+    isonantic_schema_t base;
+} isonantic_boolean_schema_t;
 
 /* Null schema */
 typedef struct {
-    IsonanticSchema base;
-} IsonanticNullSchema;
+    isonantic_schema_t base;
+} isonantic_null_schema_t;
 
 /* Reference schema */
 typedef struct {
-    IsonanticSchema base;
+    isonantic_schema_t base;
     char* ns;
     char* relationship;
-} IsonanticRefSchema;
+} isonantic_ref_schema_t;
 
 /* Object schema */
 typedef struct {
-    IsonanticSchema base;
-    IsonanticDict* fields;
-} IsonanticObjectSchema;
+    isonantic_schema_t base;
+    isonantic_dict_t* fields;
+} isonantic_object_schema_t;
 
 /* Array schema */
 typedef struct {
-    IsonanticSchema base;
-    IsonanticSchema* item_schema;
+    isonantic_schema_t base;
+    isonantic_schema_t* item_schema;
     int* min_len;
     int* max_len;
-} IsonanticArraySchema;
+} isonantic_array_schema_t;
 
 /* Table schema */
 typedef struct {
-    IsonanticSchema base;
+    isonantic_schema_t base;
     char* name;
-    IsonanticDict* fields;
-    IsonanticSchema* row_schema;
-} IsonanticTableSchema;
+    isonantic_dict_t* fields;
+    isonantic_schema_t* row_schema;
+} isonantic_table_schema_t;
 
 /* Document schema */
 typedef struct {
-    IsonanticDict* blocks;
-} IsonanticDocumentSchema;
+    isonantic_dict_t* blocks;
+} isonantic_document_schema_t;
 
 /* I namespace - provides access to all schema builders */
 typedef struct {
-    IsonanticSchema* (*String)(void);
-    IsonanticSchema* (*Number)(void);
-    IsonanticSchema* (*Int)(void);
-    IsonanticSchema* (*Float)(void);
-    IsonanticSchema* (*Boolean)(void);
-    IsonanticSchema* (*Bool)(void);
-    IsonanticSchema* (*Null)(void);
-    IsonanticSchema* (*Ref)(void);
-    IsonanticSchema* (*Reference)(void);
-    IsonanticSchema* (*Object)(IsonanticDict* fields);
-    IsonanticSchema* (*Array)(IsonanticSchema* item_schema);
-    IsonanticSchema* (*Table)(const char* name, IsonanticDict* fields);
-} IsonanticINamespace;
+    isonantic_schema_t* (*String)(void);
+    isonantic_schema_t* (*Number)(void);
+    isonantic_schema_t* (*Int)(void);
+    isonantic_schema_t* (*Float)(void);
+    isonantic_schema_t* (*Boolean)(void);
+    isonantic_schema_t* (*Bool)(void);
+    isonantic_schema_t* (*Null)(void);
+    isonantic_schema_t* (*Ref)(void);
+    isonantic_schema_t* (*Reference)(void);
+    isonantic_schema_t* (*Object)(isonantic_dict_t* fields);
+    isonantic_schema_t* (*Array)(isonantic_schema_t* item_schema);
+    isonantic_schema_t* (*Table)(const char* name, isonantic_dict_t* fields);
+} isonantic_i_namespace_t;
 
-extern IsonanticINamespace I;
+extern isonantic_i_namespace_t I;
 
 /* ==================== Utility Functions ==================== */
 
-IsonanticValue* isonantic_value_create_string(const char* str);
-IsonanticValue* isonantic_value_create_number(double num);
-IsonanticValue* isonantic_value_create_boolean(bool val);
-IsonanticValue* isonantic_value_create_null(void);
-IsonanticValue* isonantic_value_create_ref(const char* ref);
-void isonantic_value_free(IsonanticValue* value);
+isonantic_value_t* isonantic_value_create_string(const char* str);
+isonantic_value_t* isonantic_value_create_number(double num);
+isonantic_value_t* isonantic_value_create_boolean(bool val);
+isonantic_value_t* isonantic_value_create_null(void);
+isonantic_value_t* isonantic_value_create_ref(const char* ref);
+void isonantic_value_free(isonantic_value_t* value);
 
 /* ==================== Dictionary Functions ==================== */
 
-IsonanticDict* isonantic_dict_create(int capacity);
-void isonantic_dict_set(IsonanticDict* dict, const char* key, void* value);
-void* isonantic_dict_get(IsonanticDict* dict, const char* key);
-bool isonantic_dict_has_key(IsonanticDict* dict, const char* key);
-int isonantic_dict_size(IsonanticDict* dict);
-void isonantic_dict_free(IsonanticDict* dict);
+isonantic_dict_t* isonantic_dict_create(int capacity);
+void isonantic_dict_set(isonantic_dict_t* dict, const char* key, void* value);
+void* isonantic_dict_get(isonantic_dict_t* dict, const char* key);
+bool isonantic_dict_has_key(isonantic_dict_t* dict, const char* key);
+int isonantic_dict_size(isonantic_dict_t* dict);
+void isonantic_dict_free(isonantic_dict_t* dict);
 
 /* ==================== Array Functions ==================== */
 
-IsonanticArray* isonantic_array_create(int capacity);
-void isonantic_array_add(IsonanticArray* arr, void* item);
-void* isonantic_array_get(IsonanticArray* arr, int index);
-int isonantic_array_size(IsonanticArray* arr);
-void isonantic_array_free(IsonanticArray* arr);
+isonantic_array_t* isonantic_array_create(int capacity);
+void isonantic_array_add(isonantic_array_t* arr, void* item);
+void* isonantic_array_get(isonantic_array_t* arr, int index);
+int isonantic_array_size(isonantic_array_t* arr);
+void isonantic_array_free(isonantic_array_t* arr);
 
 /* ==================== Validation Error Functions ==================== */
 
-IsonanticValidationError* isonantic_validation_error_create(const char* field, const char* message, IsonanticValue* value);
-void isonantic_validation_errors_add(IsonanticValidationErrors* errors, IsonanticValidationError* error);
-IsonanticValidationErrors* isonantic_validation_errors_create(void);
-bool isonantic_validation_errors_has_errors(IsonanticValidationErrors* errors);
-int isonantic_validation_errors_count(IsonanticValidationErrors* errors);
-char* isonantic_validation_errors_to_string(IsonanticValidationErrors* errors);
-void isonantic_validation_errors_free(IsonanticValidationErrors* errors);
+isonantic_validation_error_t* isonantic_validation_error_create(const char* field, const char* message, isonantic_value_t* value);
+void isonantic_validation_errors_add(isonantic_validation_errors_t* errors, isonantic_validation_error_t* error);
+isonantic_validation_errors_t* isonantic_validation_errors_create(void);
+bool isonantic_validation_errors_has_errors(isonantic_validation_errors_t* errors);
+int isonantic_validation_errors_count(isonantic_validation_errors_t* errors);
+char* isonantic_validation_errors_to_string(isonantic_validation_errors_t* errors);
+void isonantic_validation_errors_free(isonantic_validation_errors_t* errors);
 
 /* ==================== Base Schema Functions ==================== */
 
-void isonantic_schema_set_optional(IsonanticSchema* schema);
-void isonantic_schema_set_default(IsonanticSchema* schema, IsonanticValue* value);
-void isonantic_schema_set_description(IsonanticSchema* schema, const char* desc);
-void isonantic_schema_add_refinement(IsonanticSchema* schema, IsonanticRefinementFn fn, void* user_data, const char* message);
-IsonanticValidationErrors* isonantic_schema_run_refinements(IsonanticSchema* schema, IsonanticValue* value);
+void isonantic_schema_set_optional(isonantic_schema_t* schema);
+void isonantic_schema_set_default(isonantic_schema_t* schema, isonantic_value_t* value);
+void isonantic_schema_set_description(isonantic_schema_t* schema, const char* desc);
+void isonantic_schema_add_refinement(isonantic_schema_t* schema, isonantic_refinement_fn_t fn, void* user_data, const char* message);
+isonantic_validation_errors_t* isonantic_schema_run_refinements(isonantic_schema_t* schema, isonantic_value_t* value);
 
 /* ==================== String Schema ==================== */
 
-IsonanticSchema* isonantic_string_create(void);
-IsonanticSchema* isonantic_string_min(IsonanticSchema* schema, int n);
-IsonanticSchema* isonantic_string_max(IsonanticSchema* schema, int n);
-IsonanticSchema* isonantic_string_length(IsonanticSchema* schema, int n);
-IsonanticSchema* isonantic_string_email(IsonanticSchema* schema);
-IsonanticSchema* isonantic_string_url(IsonanticSchema* schema);
-IsonanticSchema* isonantic_string_regex(IsonanticSchema* schema, const char* pattern);
-IsonanticSchema* isonantic_string_optional(IsonanticSchema* schema);
-IsonanticSchema* isonantic_string_default(IsonanticSchema* schema, const char* val);
-IsonanticSchema* isonantic_string_describe(IsonanticSchema* schema, const char* desc);
-IsonanticSchema* isonantic_string_refine(IsonanticSchema* schema, bool (*fn)(const char*), const char* msg);
+isonantic_schema_t* isonantic_string_create(void);
+isonantic_schema_t* isonantic_string_min(isonantic_schema_t* schema, int n);
+isonantic_schema_t* isonantic_string_max(isonantic_schema_t* schema, int n);
+isonantic_schema_t* isonantic_string_length(isonantic_schema_t* schema, int n);
+isonantic_schema_t* isonantic_string_email(isonantic_schema_t* schema);
+isonantic_schema_t* isonantic_string_url(isonantic_schema_t* schema);
+isonantic_schema_t* isonantic_string_regex(isonantic_schema_t* schema, const char* pattern);
+isonantic_schema_t* isonantic_string_optional(isonantic_schema_t* schema);
+isonantic_schema_t* isonantic_string_default(isonantic_schema_t* schema, const char* val);
+isonantic_schema_t* isonantic_string_describe(isonantic_schema_t* schema, const char* desc);
+isonantic_schema_t* isonantic_string_refine(isonantic_schema_t* schema, bool (*fn)(const char*), const char* msg);
 
 /* ==================== Number Schema ==================== */
 
-IsonanticSchema* isonantic_number_create(void);
-IsonanticSchema* isonantic_int_create(void);
-IsonanticSchema* isonantic_number_min(IsonanticSchema* schema, double n);
-IsonanticSchema* isonantic_number_max(IsonanticSchema* schema, double n);
-IsonanticSchema* isonantic_number_positive(IsonanticSchema* schema);
-IsonanticSchema* isonantic_number_negative(IsonanticSchema* schema);
-IsonanticSchema* isonantic_number_optional(IsonanticSchema* schema);
-IsonanticSchema* isonantic_number_default(IsonanticSchema* schema, double val);
-IsonanticSchema* isonantic_number_describe(IsonanticSchema* schema, const char* desc);
-IsonanticSchema* isonantic_number_refine(IsonanticSchema* schema, bool (*fn)(double), const char* msg);
+isonantic_schema_t* isonantic_number_create(void);
+isonantic_schema_t* isonantic_int_create(void);
+isonantic_schema_t* isonantic_number_min(isonantic_schema_t* schema, double n);
+isonantic_schema_t* isonantic_number_max(isonantic_schema_t* schema, double n);
+isonantic_schema_t* isonantic_number_positive(isonantic_schema_t* schema);
+isonantic_schema_t* isonantic_number_negative(isonantic_schema_t* schema);
+isonantic_schema_t* isonantic_number_optional(isonantic_schema_t* schema);
+isonantic_schema_t* isonantic_number_default(isonantic_schema_t* schema, double val);
+isonantic_schema_t* isonantic_number_describe(isonantic_schema_t* schema, const char* desc);
+isonantic_schema_t* isonantic_number_refine(isonantic_schema_t* schema, bool (*fn)(double), const char* msg);
 
 /* ==================== Boolean Schema ==================== */
 
-IsonanticSchema* isonantic_boolean_create(void);
-IsonanticSchema* isonantic_boolean_optional(IsonanticSchema* schema);
-IsonanticSchema* isonantic_boolean_default(IsonanticSchema* schema, bool val);
-IsonanticSchema* isonantic_boolean_describe(IsonanticSchema* schema, const char* desc);
+isonantic_schema_t* isonantic_boolean_create(void);
+isonantic_schema_t* isonantic_boolean_optional(isonantic_schema_t* schema);
+isonantic_schema_t* isonantic_boolean_default(isonantic_schema_t* schema, bool val);
+isonantic_schema_t* isonantic_boolean_describe(isonantic_schema_t* schema, const char* desc);
 
 /* ==================== Null Schema ==================== */
 
-IsonanticSchema* isonantic_null_create(void);
+isonantic_schema_t* isonantic_null_create(void);
 
 /* ==================== Reference Schema ==================== */
 
-IsonanticSchema* isonantic_ref_create(void);
-IsonanticSchema* isonantic_ref_namespace(IsonanticSchema* schema, const char* ns);
-IsonanticSchema* isonantic_ref_relationship(IsonanticSchema* schema, const char* rel);
-IsonanticSchema* isonantic_ref_optional(IsonanticSchema* schema);
-IsonanticSchema* isonantic_ref_describe(IsonanticSchema* schema, const char* desc);
+isonantic_schema_t* isonantic_ref_create(void);
+isonantic_schema_t* isonantic_ref_namespace(isonantic_schema_t* schema, const char* ns);
+isonantic_schema_t* isonantic_ref_relationship(isonantic_schema_t* schema, const char* rel);
+isonantic_schema_t* isonantic_ref_optional(isonantic_schema_t* schema);
+isonantic_schema_t* isonantic_ref_describe(isonantic_schema_t* schema, const char* desc);
 
 /* ==================== Object Schema ==================== */
 
-IsonanticSchema* isonantic_object_create(IsonanticDict* fields);
-IsonanticSchema* isonantic_object_optional(IsonanticSchema* schema);
-IsonanticSchema* isonantic_object_describe(IsonanticSchema* schema, const char* desc);
-IsonanticSchema* isonantic_object_extend(IsonanticSchema* schema, IsonanticDict* fields);
-IsonanticSchema* isonantic_object_pick(IsonanticSchema* schema, int num_keys, const char** keys);
-IsonanticSchema* isonantic_object_omit(IsonanticSchema* schema, int num_keys, const char** keys);
+isonantic_schema_t* isonantic_object_create(isonantic_dict_t* fields);
+isonantic_schema_t* isonantic_object_optional(isonantic_schema_t* schema);
+isonantic_schema_t* isonantic_object_describe(isonantic_schema_t* schema, const char* desc);
+isonantic_schema_t* isonantic_object_extend(isonantic_schema_t* schema, isonantic_dict_t* fields);
+isonantic_schema_t* isonantic_object_pick(isonantic_schema_t* schema, int num_keys, const char** keys);
+isonantic_schema_t* isonantic_object_omit(isonantic_schema_t* schema, int num_keys, const char** keys);
 
 /* ==================== Array Schema ==================== */
 
-IsonanticSchema* isonantic_array_create_schema(IsonanticSchema* item_schema);
-IsonanticSchema* isonantic_array_min(IsonanticSchema* schema, int n);
-IsonanticSchema* isonantic_array_max(IsonanticSchema* schema, int n);
-IsonanticSchema* isonantic_array_optional(IsonanticSchema* schema);
-IsonanticSchema* isonantic_array_describe(IsonanticSchema* schema, const char* desc);
+isonantic_schema_t* isonantic_array_create_schema(isonantic_schema_t* item_schema);
+isonantic_schema_t* isonantic_array_min(isonantic_schema_t* schema, int n);
+isonantic_schema_t* isonantic_array_max(isonantic_schema_t* schema, int n);
+isonantic_schema_t* isonantic_array_optional(isonantic_schema_t* schema);
+isonantic_schema_t* isonantic_array_describe(isonantic_schema_t* schema, const char* desc);
 
 /* ==================== Table Schema ==================== */
 
-IsonanticSchema* isonantic_table_create(const char* name, IsonanticDict* fields);
-IsonanticSchema* isonantic_table_optional(IsonanticSchema* schema);
-IsonanticSchema* isonantic_table_describe(IsonanticSchema* schema, const char* desc);
-const char* isonantic_table_get_name(IsonanticSchema* schema);
+isonantic_schema_t* isonantic_table_create(const char* name, isonantic_dict_t* fields);
+isonantic_schema_t* isonantic_table_optional(isonantic_schema_t* schema);
+isonantic_schema_t* isonantic_table_describe(isonantic_schema_t* schema, const char* desc);
+const char* isonantic_table_get_name(isonantic_schema_t* schema);
 
 /* ==================== Document Schema ==================== */
 
-IsonanticSchema* isonantic_document_create(IsonanticDict* blocks);
-IsonanticDict* isonantic_document_parse(IsonanticSchema* schema, IsonanticDict* value, IsonanticValidationErrors** error);
-IsonanticSafeParseResult isonantic_document_safe_parse(IsonanticSchema* schema, IsonanticDict* value);
+isonantic_schema_t* isonantic_document_create(isonantic_dict_t* blocks);
+isonantic_dict_t* isonantic_document_parse(isonantic_schema_t* schema, isonantic_dict_t* value, isonantic_validation_errors_t** error);
+isonantic_safe_parse_result_t isonantic_document_safe_parse(isonantic_schema_t* schema, isonantic_dict_t* value);
 
 /* ==================== Free Functions ==================== */
 
-void isonantic_schema_free(IsonanticSchema* schema);
+void isonantic_schema_free(isonantic_schema_t* schema);
 
 #ifdef __cplusplus
 }

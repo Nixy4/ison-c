@@ -33,15 +33,15 @@ static int tests_failed = 0;
 
 static void test_string_required(void) {
     printf("Test: String Required\n");
-    IsonanticSchema* schema = isonantic_string_create();
+    isonantic_schema_t* schema = isonantic_string_create();
 
-    IsonanticValue* val = isonantic_value_create_string("hello");
-    IsonanticValidationErrors* err = schema->validate(schema, val);
+    isonantic_value_t* val = isonantic_value_create_string("hello");
+    isonantic_validation_errors_t* err = schema->validate(schema, val);
     ASSERT_NULL(err);
     if (err) isonantic_validation_errors_free(err);
     isonantic_value_free(val);
 
-    IsonanticValue* nil_val = NULL;
+    isonantic_value_t* nil_val = NULL;
     err = schema->validate(schema, nil_val);
     ASSERT_NOT_NULL(err);
     if (err) isonantic_validation_errors_free(err);
@@ -51,11 +51,11 @@ static void test_string_required(void) {
 
 static void test_string_optional(void) {
     printf("Test: String Optional\n");
-    IsonanticSchema* schema = isonantic_string_create();
+    isonantic_schema_t* schema = isonantic_string_create();
     isonantic_string_optional(schema);
 
-    IsonanticValue* nil_val = NULL;
-    IsonanticValidationErrors* err = schema->validate(schema, nil_val);
+    isonantic_value_t* nil_val = NULL;
+    isonantic_validation_errors_t* err = schema->validate(schema, nil_val);
     ASSERT_NULL(err);
     if (err) isonantic_validation_errors_free(err);
 
@@ -65,16 +65,16 @@ static void test_string_optional(void) {
 
 static void test_string_min_length(void) {
     printf("Test: String Min Length\n");
-    IsonanticSchema* schema = isonantic_string_create();
+    isonantic_schema_t* schema = isonantic_string_create();
     isonantic_string_min(schema, 5);
 
-    IsonanticValue* val = isonantic_value_create_string("hello");
-    IsonanticValidationErrors* err = schema->validate(schema, val);
+    isonantic_value_t* val = isonantic_value_create_string("hello");
+    isonantic_validation_errors_t* err = schema->validate(schema, val);
     ASSERT_NULL(err);
     if (err) isonantic_validation_errors_free(err);
     isonantic_value_free(val);
 
-    IsonanticValue* short_val = isonantic_value_create_string("hi");
+    isonantic_value_t* short_val = isonantic_value_create_string("hi");
     err = schema->validate(schema, short_val);
     ASSERT_NOT_NULL(err);
     if (err) {
@@ -90,16 +90,16 @@ static void test_string_min_length(void) {
 
 static void test_string_email(void) {
     printf("Test: String Email\n");
-    IsonanticSchema* schema = isonantic_string_create();
+    isonantic_schema_t* schema = isonantic_string_create();
     isonantic_string_email(schema);
 
-    IsonanticValue* valid = isonantic_value_create_string("test@example.com");
-    IsonanticValidationErrors* err = schema->validate(schema, valid);
+    isonantic_value_t* valid = isonantic_value_create_string("test@example.com");
+    isonantic_validation_errors_t* err = schema->validate(schema, valid);
     ASSERT_NULL(err);
     if (err) isonantic_validation_errors_free(err);
     isonantic_value_free(valid);
 
-    IsonanticValue* invalid = isonantic_value_create_string("invalid-email");
+    isonantic_value_t* invalid = isonantic_value_create_string("invalid-email");
     err = schema->validate(schema, invalid);
     ASSERT_NOT_NULL(err);
     if (err) isonantic_validation_errors_free(err);
@@ -112,15 +112,15 @@ static void test_string_email(void) {
 
 static void test_number_required(void) {
     printf("Test: Number Required\n");
-    IsonanticSchema* schema = isonantic_number_create();
+    isonantic_schema_t* schema = isonantic_number_create();
 
-    IsonanticValue* val = isonantic_value_create_number(42.5);
-    IsonanticValidationErrors* err = schema->validate(schema, val);
+    isonantic_value_t* val = isonantic_value_create_number(42.5);
+    isonantic_validation_errors_t* err = schema->validate(schema, val);
     ASSERT_NULL(err);
     if (err) isonantic_validation_errors_free(err);
     isonantic_value_free(val);
 
-    IsonanticValue* nil_val = NULL;
+    isonantic_value_t* nil_val = NULL;
     err = schema->validate(schema, nil_val);
     ASSERT_NOT_NULL(err);
     if (err) isonantic_validation_errors_free(err);
@@ -130,15 +130,15 @@ static void test_number_required(void) {
 
 static void test_int_schema(void) {
     printf("Test: Int Schema\n");
-    IsonanticSchema* schema = isonantic_int_create();
+    isonantic_schema_t* schema = isonantic_int_create();
 
-    IsonanticValue* val = isonantic_value_create_number(42.0);
-    IsonanticValidationErrors* err = schema->validate(schema, val);
+    isonantic_value_t* val = isonantic_value_create_number(42.0);
+    isonantic_validation_errors_t* err = schema->validate(schema, val);
     ASSERT_NULL(err);
     if (err) isonantic_validation_errors_free(err);
     isonantic_value_free(val);
 
-    IsonanticValue* float_val = isonantic_value_create_number(42.5);
+    isonantic_value_t* float_val = isonantic_value_create_number(42.5);
     err = schema->validate(schema, float_val);
     ASSERT_NOT_NULL(err);
     if (err) {
@@ -154,16 +154,16 @@ static void test_int_schema(void) {
 
 static void test_number_positive(void) {
     printf("Test: Number Positive\n");
-    IsonanticSchema* schema = isonantic_number_create();
+    isonantic_schema_t* schema = isonantic_number_create();
     isonantic_number_positive(schema);
 
-    IsonanticValue* val = isonantic_value_create_number(5.0);
-    IsonanticValidationErrors* err = schema->validate(schema, val);
+    isonantic_value_t* val = isonantic_value_create_number(5.0);
+    isonantic_validation_errors_t* err = schema->validate(schema, val);
     ASSERT_NULL(err);
     if (err) isonantic_validation_errors_free(err);
     isonantic_value_free(val);
 
-    IsonanticValue* zero_val = isonantic_value_create_number(0.0);
+    isonantic_value_t* zero_val = isonantic_value_create_number(0.0);
     err = schema->validate(schema, zero_val);
     ASSERT_NOT_NULL(err);
     if (err) {
@@ -181,15 +181,15 @@ static void test_number_positive(void) {
 
 static void test_boolean_required(void) {
     printf("Test: Boolean Required\n");
-    IsonanticSchema* schema = isonantic_boolean_create();
+    isonantic_schema_t* schema = isonantic_boolean_create();
 
-    IsonanticValue* val = isonantic_value_create_boolean(true);
-    IsonanticValidationErrors* err = schema->validate(schema, val);
+    isonantic_value_t* val = isonantic_value_create_boolean(true);
+    isonantic_validation_errors_t* err = schema->validate(schema, val);
     ASSERT_NULL(err);
     if (err) isonantic_validation_errors_free(err);
     isonantic_value_free(val);
 
-    IsonanticValue* nil_val = NULL;
+    isonantic_value_t* nil_val = NULL;
     err = schema->validate(schema, nil_val);
     ASSERT_NOT_NULL(err);
     if (err) isonantic_validation_errors_free(err);
@@ -201,15 +201,15 @@ static void test_boolean_required(void) {
 
 static void test_ref_required(void) {
     printf("Test: Ref Required\n");
-    IsonanticSchema* schema = isonantic_ref_create();
+    isonantic_schema_t* schema = isonantic_ref_create();
 
-    IsonanticValue* val = isonantic_value_create_ref(":1");
-    IsonanticValidationErrors* err = schema->validate(schema, val);
+    isonantic_value_t* val = isonantic_value_create_ref(":1");
+    isonantic_validation_errors_t* err = schema->validate(schema, val);
     ASSERT_NULL(err);
     if (err) isonantic_validation_errors_free(err);
     isonantic_value_free(val);
 
-    IsonanticValue* nil_val = NULL;
+    isonantic_value_t* nil_val = NULL;
     err = schema->validate(schema, nil_val);
     ASSERT_NOT_NULL(err);
     if (err) isonantic_validation_errors_free(err);
